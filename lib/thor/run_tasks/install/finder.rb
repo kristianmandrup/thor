@@ -6,16 +6,10 @@ module Thor
         
         def get_thor_task(name)
           begin       
-            thor_name!(name)
-  
-            say "Installing thor task: #{name}" if options[:verbose]
-            if File.directory?(File.expand_path(name))
-              base, package = File.join(name, 'main.thor'), :directory
-              contents      = open(base).read         
-            else
-              base, package = name, :file
-              contents      = open(name).read
-            end
+            thor_name!(name)  
+            say_verbose "Installing thor task: #{name}"  
+            read_package(name) if package?
+            read_file(name) if !package?
             return [contents, base, package]            
           rescue OpenURI::HTTPError
             raise Error, "Error opening URI '#{name}'"
@@ -26,12 +20,29 @@ module Thor
           end
         end
 
+        def package?(name)
+          File.directory?(File.expand_path(name))          
+        end
+
+        def read_package(name)
+          base, package = File.join(name, 'main.thor'), :directory
+          contents      = open(base).read         
+        end
+
+        def read_file(name)
+          base, package = name, :file
+          contents      = open(name).read
+        end
+
+
         # tries to find thor files both in the project root and in the /lib directory (ruby convention)
         def thor_name!(name)
           if !name || name.strip == ''
-            thor_files = FileList['*.thor', 'lib/*.thor']
+            # lib takes precedence
+            thor_files = FileList['lib/*.thor', '*.thor']
             if thor_files
               thor_files.reject!{|f| !File.exist?(f)}
+              # ensure no duplicates
               thor_files.uniq!
               name = thor_files.first
             end
