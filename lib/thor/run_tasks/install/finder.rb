@@ -26,6 +26,7 @@ module Thor
           end
         end
 
+        # tries to find thor files both in the project root and in the /lib directory (ruby convention)
         def thor_name!(name)
           if !name || name.strip == ''
             thor_files = FileList['*.thor', 'lib/*.thor']
