@@ -27,22 +27,6 @@ describe Thor::Actions do
     ::FileUtils.rm_rf(destination_root)
   end
 
-  describe "#template_content" do
-    it "returns the content of executing a template" do
-      runner.instance_variable_set("@klass", "Config")
-      content = action :template_content, "doc/config.rb"
-      content.must == "class Config; end\n"
-    end
-  end
-
-  describe "#file_content" do
-    it "returns the contents of a file" do
-      runner.instance_variable_set("@klass", "Config")
-      content = action :file_content, "doc/README"
-      content.must == "__start__\nREADME\n__end__\n"      
-    end
-  end
-
   describe "#chmod" do
     it "executes the command given" do
       FileUtils.should_receive(:chmod_R).with(0755, file)
@@ -166,6 +150,21 @@ describe Thor::Actions do
     end
   end
 
+  describe "#template_content" do
+    it "returns the content of executing a template" do
+      runner.instance_variable_set("@klass", "Config")
+      content = action :template_content, "doc/config.rb"
+      content.must == "class Config; end\n"
+    end
+  end
+
+  describe "#file_content" do
+    it "returns the contents of a file in templates dir" do
+      content = action :file_content, "doc/README"
+      content.must == "__start__\nREADME\n__end__\n"      
+    end
+  end
+
   describe "when changing existent files" do
     before(:each) do
       ::FileUtils.cp_r(source_root, destination_root)
@@ -233,6 +232,11 @@ describe Thor::Actions do
         File.binread(file).must == "__start__\nREADME\n__end__\nEND\n"
       end
 
+      it "appends content to the file with newline" do
+        action :append_file, "doc/README", "END", :newline
+        File.binread(file).must == "__start__\nREADME\n__end__\nEND\n"
+      end
+
       it "accepts a block" do
         action(:append_file, "doc/README"){ "END\n" }
         File.binread(file).must == "__start__\nREADME\n__end__\nEND\n"
@@ -247,6 +251,11 @@ describe Thor::Actions do
       it "prepends content to the file" do
         action :prepend_file, "doc/README", "START\n"
         File.binread(file).must == "START\n__start__\nREADME\n__end__\n"
+      end
+
+      it "prepends content to the file with newline" do
+        action :prepend_file, "doc/README", "START", :newline
+        File.binread(file).must == "START\n__start__\nREADME\n__end__"
       end
 
       it "accepts a block" do
@@ -266,6 +275,11 @@ describe Thor::Actions do
 
       it "appends content to a class" do
         action :inject_into_class, "application.rb", Application, "  filter_parameters :password\n"
+        File.binread(file).must == "class Application < Base\n  filter_parameters :password\nend\n"
+      end
+
+      it "appends content to a class with newline" do
+        action :inject_into_class, "application.rb", Application, "  filter_parameters :password", :newline
         File.binread(file).must == "class Application < Base\n  filter_parameters :password\nend\n"
       end
 
