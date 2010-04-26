@@ -22,14 +22,11 @@ class Thor
     #     gems.split(" ").map{ |gem| "  config.gem :#{gem}" }.join("\n")
     #   end
     #
-    def inject_into_file(destination, *args, &block)
-      if block_given?
-        data, config = block, args.shift
-      else
-        data, config = args.shift, args.shift
-      end
-      action InjectIntoFile.new(self, destination, data, config)
-    end
+    def inject_into_file(destination, *args, &block)      
+      data = block_given? ? block : args.shift      
+      data = "#{data}\n" if args.has_key? :newline
+      action InjectIntoFile.new(self, destination, data, args.shift)
+    end   
 
     class InjectIntoFile < EmptyDirectory #:nodoc:
       attr_reader :replacement, :flag, :behavior

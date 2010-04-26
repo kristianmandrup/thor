@@ -27,6 +27,22 @@ describe Thor::Actions do
     ::FileUtils.rm_rf(destination_root)
   end
 
+  describe "#template_content" do
+    it "returns the content of executing a template" do
+      runner.instance_variable_set("@klass", "Config")
+      content = action :template_content, "doc/config.rb"
+      content.must == "class Config; end\n"
+    end
+  end
+
+  describe "#file_content" do
+    it "returns the contents of a file" do
+      runner.instance_variable_set("@klass", "Config")
+      content = action :file_content, "doc/README"
+      content.must == "__start__\nREADME\n__end__\n"      
+    end
+  end
+
   describe "#chmod" do
     it "executes the command given" do
       FileUtils.should_receive(:chmod_R).with(0755, file)

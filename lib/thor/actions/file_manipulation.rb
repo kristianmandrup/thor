@@ -92,11 +92,11 @@ class Thor
     # indent<String>:: the indentation string, fx '    '
     #
     # ==== Examples
+    #   # typically used from inside a template
+    #   file_content "authors"
     #
-    #   embed_file "authors"
-    #
-    #   embed_file "authors", '    '
-    def embed_file(source, indent='')
+    #   file_content "authors", '    '
+    def file_content(source, indent='')
       IO.read(File.join(self.class.source_root, source)).gsub(/^/, indent)
     end
 
@@ -106,84 +106,14 @@ class Thor
     # indent<String>:: the indentation string, fx '    '
     #
     # ==== Examples
+    #   # typically used from inside a template
+    #   template_content "README"
     #
-    #   embed_template "README"
-    #
-    #   embed_template "README", '    '     
-    def embed_template(source, indent='')
+    #   template_content "README", '    '     
+    def template_content(source, indent='')
       template = File.join(self.class.source_root, source)
       ERB.new(IO.read(template), nil, '-').result(binding).gsub(/^/, indent)
     end
-
-    # Cleans up a Gemfile by inserting missing newlines between gem statements
-    # Fixes old 'bug', where gem statements would be inserted into Gemfile without newlines
-    # ==== Examples
-    #
-    # cleanup_gemfile    
-    def cleanup_gemfile
-      # add newline between each gem statement in Gemfile
-      gsub_file 'Gemfile', /('|")gem/, "\1\ngem"      
-    end
-
-    # Determine if there is a gem statement in a text for a certain gem
-    # ==== Parameters
-    # text<String>:: text to search for gem statement
-    # gem_name<String>:: name of gem to search for
-    # ==== Examples
-    #
-    # has_gem? 'rspec' 
-    
-    # Note: Should allow for gem version.
-    # Should instead use ruby_traverser_dsl (gem on github) which uses ripper2ruby
-    def has_gem?(text, gem_name)        
-      if /\n[^#]*gem\s*('|")\s*#{Regexp.escape(gem_name)}\s*\1/i.match(text)  
-        true 
-      else
-        false
-      end      
-    end
-
-    # Determine if a certain plugin is installed in its appropriate location
-    # ==== Parameters
-    # plugin_name<String>:: plugin name
-    # ==== Examples
-    #
-    # has_plugin? 'paginator' 
-    def has_plugin?(plugin_name) 
-      File.directory?(File.join(Rails.root, "vendor/plugins/#{plugin_name}"))
-    end
-
-    # Quick helper for adding a single gem statement to the Gemfile
-    # ==== Parameters
-    # gem_name<String>:: gem name
-    # gem_version<String>:: gem version string
-    # ==== Examples
-    #
-    #   add_gem 'rspec' 
-    #   add_gem 'rspec', '>= 2.0' 
-    def add_gem(gem_name, gem_version = nil)
-      if !has_gem?(gemfile_txt, gem_name) 
-        gem_version_str = gem_version ? ", '#{gem_version}'" : '' 
-        append_line_to_file 'Gemfile', "gem '#{gem_name}'#{gem_version_str}"  
-      end
-    end
-
-    # Quick helper for adding multiple gem statements to the Gemfile
-    # ==== Parameters
-    # gem_names<String>:: list of gem names to add
-    #
-    # ==== Examples
-    #
-    #   add_gems 'rspec', 'cucumber', 'mocha'
-    def add_gems(*gem_names)
-      gem_names.each{|gem_name| add_gem(gem_name) }
-    end
-
-    # Loads and caches the current Gemfile content
-    def gemfile_txt
-      @gemfile_txt ||= File.open('Gemfile').read        
-    end
-
 
     # Changes the mode of the given file or directory.
     #
@@ -214,13 +144,15 @@ class Thor
     #
     #   prepend_file 'config/environments/test.rb', 'config.gem "rspec"'
     #
-    #   prepend_file 'config/environments/test.rb' do
+    #   prepend_file 'config/environments/test.rb', 'config.gem "rspec"', :newline
+    #
+    #   prepend_file 'config/environments/test.rb', :newline, :not_verbose do
     #     'config.gem "rspec"'
     #   end
     #
     def prepend_file(path, *args, &block)
-      config = args.last.is_a?(Hash) ? args.pop : {}
-      config.merge!(:after => /\A/)
+      config = parse_args(args)
+      config.merge!(:after => /\A/)  
       inject_into_file(path, *(args << config), &block)
     end
 
@@ -229,21 +161,39 @@ class Thor
     # ==== Parameters
     # path<String>:: path of the file to be changed
     # data<String>:: the data to append to the file, can be also given as a block.
-    # config<Hash>:: give :verbose => false to not log the status.
+    # config<Hash>:: give :verbose => false to not log the status. :newline => true to ensure new line after text. Can also be given as symbols :newline, :not_verbose
     #
     # ==== Example
     #
-    #   append_file 'config/environments/test.rb', 'config.gem "rspec"'
+    #   append_file 'config/environments/test.rb', 'config.gem "rspec"', :newline
     #
     #   append_file 'config/environments/test.rb' do
     #     'config.gem "rspec"'
     #   end
     #
     def append_file(path, *args, &block)
-      config = args.last.is_a?(Hash) ? args.pop : {}
+      config = parse_args(args)
       config.merge!(:before => /\z/)
       inject_into_file(path, *(args << config), &block)
     end
+
+    def parse_args(*args)
+      arguments = {}
+      args.each do |arg| 
+        case arg
+        when Symbol
+          if arg == :not_verbose
+            arguments.merge!(:verbose => false)            
+          else
+            arguments.merge!(arg => true)
+          end
+        when Hash
+          arguments.merge!(arg)
+        end        
+      end
+      arguments
+    end
+                                       
 
     # Injects text right after the class definition. Since it depends on
     # inject_into_file, it's reversible.
@@ -263,8 +213,8 @@ class Thor
     #   end
     #
     def inject_into_class(path, klass, *args, &block)
-      config = args.last.is_a?(Hash) ? args.pop : {}
-      config.merge!(:after => /class #{klass}\n|class #{klass} .*\n/)
+      config = parse_args(args)
+      config.merge!(:after => /class #{klass}\n|class #{klass} .*\n/) 
       inject_into_file(path, *(args << config), &block)
     end
 
