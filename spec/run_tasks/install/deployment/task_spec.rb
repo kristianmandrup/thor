@@ -19,9 +19,20 @@ require 'thor/runner'
 #       - run
 #         - rspec_run.template      
 
-# The thor tasks rspec and rspec_util are both in the same project called 'rspec-project'. By default, the installer can find the project information in the signature file.
+# Example of Signature file: APP.RUBY.TASK.THOR.signature
+# ----
+# Application:
+#   Name: rspec-project
+#   Author: kmandrup
+#   Version: 0.1.0
+#   Test:
+#   - Cucumber
+#   - Rspec
+
+# The thor tasks configure and run are both in the same project called 'rspec-project'. By default, the installer can find the project information in the signature file.
 # The user then has the option to override this name as part of install/deploy process (or if no signature file present)
 # The tasks will each be deployed in the thor repo under a namespace, according to their internal configuration (according to fx Thor::Group, Module container or namespace)
+# The thor repo entry will also have a :project_name attribute.
 
 # The tasks will both be deployed to the same thor project repo folder
 
@@ -30,8 +41,8 @@ require 'thor/runner'
 # .thor-projects
 # - rspec-project (tasks container project)
 #   - lib
-#     - rspec.thor
-#     - rspec_util.thor
+#     - configure.thor
+#     - run.thor
 #     - helpers
 #        rspec_helper.rb
 # - github-tasks (another tasks container project)
@@ -44,3 +55,4 @@ describe Thor::Runner do
     fail "test not yet implemented"      
   end
 end
+

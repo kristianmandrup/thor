@@ -44,3 +44,4 @@ describe Thor::Runner do
     fail "test not yet implemented"      
   end
 end
+
