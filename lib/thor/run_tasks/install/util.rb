@@ -34,7 +34,7 @@ module Thor
         def specify_as_name
           unless as
             basename = File.basename(name) 
-            @as_name = basename.gsub /\.thor$/, ''      
+            as_name = basename.gsub /\.thor$/, ''      
             @as = ask("Please specify a name for #{name} in the system repository [#{as_name}]:")
             @as = as_name if as.empty?
           end

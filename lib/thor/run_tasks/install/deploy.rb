@@ -21,7 +21,7 @@ module Thor
         end
                 
         def deploy_task   
-          @as_name = as.gsub /\.thor$/, ''
+          as_name = as.gsub /\.thor$/, ''
                      
           if !template_path
             say "You can set the environment variable THOR_TEMPLATE_PATH to point to a dir that acts as a template repository for all thor tasks."      

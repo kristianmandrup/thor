@@ -23,26 +23,12 @@ module Thor
         display_klasses(true, options["internal"])
       end
 
-      # install thor module or task
-      desc "install [NAME]", "Install an optionally named Thor file into your system tasks"
-      method_options :as => :string, :relative => :boolean, :force => :boolean, , :verbose => :boolean, :deploy => :boolean, :deploy_templates => :boolean, :deploy_path => :string
-      def install(name=nil)
+      # install named thor tasks or all tasks found 
+      desc "install [NAMES]", "Install one or more named Thor files or all Thor files found into your system tasks"
+      method_options :as => :string, :force => :boolean, , :verbose => :boolean
+      def install(names=nil)
         initialize_thorfiles
-
-        # If a directory name is provided as the argument, look for a 'main.thor' 
-        # task in said directory.
-        contents, base, package = get_thor_task(name)      
-
-        # display content of taks for the user to decide whether to continue the proces
-        display_task_content contents
-
-        # configure 'as' name, the name to store the tasks as
-        thor_yaml[as] = configure_as
-
-        # do deployment of thor tasks and templates if such exist
-        do_deployment
-
-        update_repo!
+        find_thor_tasks(names).each{|task| task.install!} 
       end
 
       # update installed thor file

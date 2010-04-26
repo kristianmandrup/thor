@@ -4,9 +4,9 @@ module Thor
       module TaskFinder   
         attr_accessor :base, :package, :contents        
         
-        def get_thor_task(name)
+        def thor_tasks(names)
           begin       
-            thor_name!(name)  
+            thor_names!(names)  
             say_verbose "Installing thor task: #{name}"  
             read_package(name) if package?
             read_file(name) if !package?
@@ -34,9 +34,7 @@ module Thor
           contents      = open(name).read
         end
 
-
-        # tries to find thor files both in the project root and in the /lib directory (ruby convention)
-        def thor_name!(name)
+        def thor_name(name)
           if !name || name.strip == ''
             # lib takes precedence
             thor_files = FileList['lib/*.thor', '*.thor']
@@ -46,8 +44,14 @@ module Thor
               thor_files.uniq!
               name = thor_files.first
             end
-            raise Error, "No .thor file found in current dir or in lib" if !name              
+
           end
+        end
+
+        # tries to find thor files both in the project root and in the /lib directory (ruby convention)
+        def thor_names(*names)
+          names.select{|name| thor_name(name)}
+          raise Error, "No .thor file found in current dir or in lib" if !names                        
         end
       end
     end
